@@ -428,52 +428,68 @@ cout<<setw(20)<<setfill(' ')<<"";
         cout << "\n\tPassword reset successfully!\n";
     }
 
-    void highLevelFunctionality() {
-        countdown();
-        cout << "\n\n\t\t\tWelcome, High-Level User!\n";
-         
+   
+void highLevelFunctionality() {
+    countdown();
+    cout << "\n\n\t\t\tWelcome, High-Level User!\n";
 
-    // Example usage
-    int choice;
+    int choice = 2; // Start with the first option highlighted
+    int maxOption = 7; // Maximum number of options
+    char key;
+
     while (true) {
+        system("cls"); // Clear the console
         cout << "\n--- Hospital Patient Management System ---\n";
-       
-        cout << "2. Display All Patients\n";
-        
-        cout << "4. Find Patient by CNIC\n";
-       
-        cout << "6. Display Bill\n";
-        cout << "7. Exit\n";
-        cout << "Enter your choice: ";
-        cin >> choice;
 
-        if (choice == 1) {
-          
-        } else if (choice == 2) {
-            hm.displayPatients();
-        } else if (choice == 3) {
-           
-        } else if (choice == 4) {
-            string cnic;
-            cout << "Enter CNIC: ";
-            cin >> cnic;
-            hm.findPatientByCNIC(cnic);
-        } else if (choice == 5) {
-           
-        } else if (choice == 6) {
-            int id;
-            cout << "Enter Patient ID for billing: ";
-            cin >> id;
-            hm.displayBill(id);
-        } else if (choice == 7) {
-            break; // Exit
-        } else {
-            cout << "Invalid choice. Please try again.\n";
+        // Display menu options with arrow key navigation
+        for (int i = 2; i <= maxOption; i++) {
+            if (i == choice) {
+                cout << "> "; // Highlight the current choice
+            } else {
+                cout << "  ";
+            }
+            switch (i) {
+                case 2: cout << "Display All Patients\n"; break;
+                case 4: cout << "Find Patient by CNIC\n"; break;
+                case 6: cout << "Display Bill\n"; break;
+                case 7: cout << "Exit\n"; break;
+            }
+        }
+
+        key = _getch(); // Get user input for navigation
+
+        if (key == 72) { // Up arrow key
+            choice--;
+            if (choice < 2) choice = 7; // Loop back to the last option
+        } else if (key == 80) { // Down arrow key
+            choice++;
+            if (choice > 7) choice = 2; // Loop back to the first option
+        } else if (key == '\r') { // Enter key
+            if (choice == 2) {
+                // Display all patients
+                hm.displayPatients();
+                system("pause"); // Pause to view output before clearing screen
+            } else if (choice == 4) {
+                // Find patient by CNIC
+                string cnic;
+                cout << "Enter CNIC: ";
+                cin >> cnic;
+                hm.findPatientByCNIC(cnic);
+                system("pause"); // Pause to view output before clearing screen
+            } else if (choice == 6) {
+                // Display bill
+                int id;
+                cout << "Enter Patient ID for billing: ";
+                cin >> id;
+                hm.displayBill(id);
+                system("pause"); // Pause to view output before clearing screen
+            } else if (choice == 7) {
+                // Exit
+                break;
+            }
         }
     }
-        // Additional high-level functionality can be implemented here
-    }
-
+}
     void localSystemFunctionality() {
         countdown();
         cout << "\n\n\t\t\tWelcome, Local System User!\n";
