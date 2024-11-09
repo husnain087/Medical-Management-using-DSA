@@ -246,6 +246,163 @@ public:
     }
 };
 
+struct Doctor {
+    string name;
+    string specialization;
+    int yearsOfExperience;
+    string qualifications;
+    string contactInfo;
+};
+
+// Function to add a new doctor profile
+void addDoctorProfile() {
+    Doctor doctor;
+    cout << "Enter Doctor's Name: ";
+    cin.ignore();
+    getline(cin, doctor.name);
+
+    cout << "Enter Specialization: ";
+    getline(cin, doctor.specialization);
+
+    cout << "Enter Years of Experience: ";
+    cin >> doctor.yearsOfExperience;
+    cin.ignore();
+
+    cout << "Enter Qualifications: ";
+    getline(cin, doctor.qualifications);
+
+    cout << "Enter Contact Info: ";
+    getline(cin, doctor.contactInfo);
+
+    ofstream file("doctors.txt", ios::app);  // Open in append mode
+    if (file.is_open()) {
+        file << doctor.name << "|" << doctor.specialization << "|" 
+             << doctor.yearsOfExperience << "|" << doctor.qualifications 
+             << "|" << doctor.contactInfo << "\n";
+        file.close();
+        cout << "Doctor profile added successfully.\n";
+    } else {
+        cout << "Error opening file.\n";
+    }
+}
+
+// Function to view all doctor profiles
+void viewDoctorProfiles() {
+    ifstream file("doctors.txt");
+    if (file.is_open()) {
+        string line;
+        cout << "\n--- Doctor Profiles ---\n";
+        while (getline(file, line)) {
+            // Split each line by '|'
+            string name, specialization, years, qualifications, contact;
+            size_t pos = 0;
+            
+            pos = line.find('|');
+            name = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            pos = line.find('|');
+            specialization = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            pos = line.find('|');
+            years = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            pos = line.find('|');
+            qualifications = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            contact = line;
+
+            // Display doctor profile
+            cout << "Name: " << name << "\nSpecialization: " << specialization 
+                 << "\nYears of Experience: " << years 
+                 << "\nQualifications: " << qualifications 
+                 << "\nContact Info: " << contact << "\n\n";
+        }
+        file.close();
+    } else {
+        cout << "Error opening file.\n";
+    }
+}
+
+// Function to update an existing doctor's profile
+void updateDoctorProfile() {
+    string searchName;
+    cout << "Enter the name of the doctor to update: ";
+    cin.ignore();
+    getline(cin, searchName);
+
+    ifstream file("doctors.txt");
+    ofstream tempFile("temp.txt");  // Temporary file to store updated data
+
+    bool found = false;
+    if (file.is_open() && tempFile.is_open()) {
+        string line;
+        while (getline(file, line)) {
+            Doctor doctor;
+            size_t pos = 0;
+            
+            pos = line.find('|');
+            doctor.name = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            pos = line.find('|');
+            doctor.specialization = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            pos = line.find('|');
+            doctor.yearsOfExperience = stoi(line.substr(0, pos));
+            line.erase(0, pos + 1);
+
+            pos = line.find('|');
+            doctor.qualifications = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            doctor.contactInfo = line;
+
+            if (doctor.name == searchName) {
+                found = true;
+                cout << "\nUpdating profile for " << doctor.name << ":\n";
+                cout << "Enter New Specialization: ";
+                getline(cin, doctor.specialization);
+
+                cout << "Enter New Years of Experience: ";
+                cin >> doctor.yearsOfExperience;
+                cin.ignore();
+
+                cout << "Enter New Qualifications: ";
+                getline(cin, doctor.qualifications);
+
+                cout << "Enter New Contact Info: ";
+                getline(cin, doctor.contactInfo);
+            }
+
+            tempFile << doctor.name << "|" << doctor.specialization << "|"
+                     << doctor.yearsOfExperience << "|" << doctor.qualifications
+                     << "|" << doctor.contactInfo << "\n";
+        }
+
+        file.close();
+        tempFile.close();
+
+        // Replace original file with updated temp file
+        remove("doctors.txt");
+        rename("temp.txt", "doctors.txt");
+
+        if (found) {
+            cout << "Doctor profile updated successfully.\n";
+        } else {
+            cout << "Doctor not found.\n";
+        }
+    } else {
+        cout << "Error opening file.\n";
+    }
+}
+
+// Main function to run the Doctor Profile Management module
+
 
 // Display main menu for high-level users
 void displayMenuH(int selectedOption) {
@@ -337,6 +494,214 @@ public:
     }
 };
  HospitalManagement hm;
+struct Staff {
+    string name;
+    string occupation;
+    int age;
+    string contact;
+    Staff* next;  // Pointer to the next staff profile
+};
+
+// Initialize the circular linked list
+Staff* head = nullptr;
+
+// Function to save staff data to a file
+void saveToFile() {
+    ofstream file("staff_profiles.txt");
+    if (!file) {
+        cout << "Error opening file for writing.\n";
+        return;
+    }
+    
+    Staff* temp = head;
+    if (temp) {
+        do {
+            file << temp->name << "\n" << temp->occupation << "\n" << temp->age << "\n" << temp->contact << "\n";
+            temp = temp->next;
+        } while (temp != head);
+    }
+    file.close();
+    cout << "Staff profiles saved to file successfully.\n";
+}
+
+// Function to load staff data from a file
+void loadFromFile() {
+    ifstream file("staff_profiles.txt");
+    if (!file) {
+        cout << "Error opening file for reading.\n";
+        return;
+    }
+
+    string name, occupation, contact;
+    int age;
+    while (getline(file, name) && getline(file, occupation) && file >> age && file.ignore() && getline(file, contact)) {
+        Staff* newStaff = new Staff{name, occupation, age, contact, nullptr};
+        if (!head) {
+            head = newStaff;
+            newStaff->next = head;
+        } else {
+            Staff* temp = head;
+            while (temp->next != head) {
+                temp = temp->next;
+            }
+            temp->next = newStaff;
+            newStaff->next = head;
+        }
+    }
+    file.close();
+    cout << "Staff profiles loaded from file successfully.\n";
+}
+
+// Function to add a new staff profile
+void addStaffProfile() {
+    Staff* newStaff = new Staff();
+    cout << "Enter name: ";
+    cin.ignore();
+    getline(cin, newStaff->name);
+    cout << "Enter occupation (Nurse, Receptionist, Lab Technician, Cleaner, Security): ";
+    getline(cin, newStaff->occupation);
+    cout << "Enter age: ";
+    cin >> newStaff->age;
+    cout << "Enter contact number: ";
+    cin.ignore();
+    getline(cin, newStaff->contact);
+
+    if (!head) { // If list is empty
+        head = newStaff;
+        newStaff->next = head;
+    } else {
+        Staff* temp = head;
+        while (temp->next != head) {
+            temp = temp->next;
+        }
+        temp->next = newStaff;
+        newStaff->next = head;
+    }
+    cout << "Staff profile added successfully!\n";
+    saveToFile();  // Save changes to file
+}
+
+// Function to view all staff profiles
+void viewStaffProfiles() {
+    if (!head) {
+        cout << "No staff profiles available.\n";
+        return;
+    }
+    Staff* temp = head;
+    cout << "\n--- Hospital Staff Profiles ---\n";
+    do {
+        cout << "Name: " << temp->name << ", Occupation: " << temp->occupation
+             << ", Age: " << temp->age << ", Contact: " << temp->contact << endl;
+        temp = temp->next;
+    } while (temp != head);
+}
+
+// Function to update a staff profile
+void updateStaffProfile() {
+    if (!head) {
+        cout << "No staff profiles to update.\n";
+        return;
+    }
+    string name;
+    cout << "Enter the name of the staff to update: ";
+    cin.ignore();
+    getline(cin, name);
+
+    Staff* temp = head;
+    do {
+        if (temp->name == name) {
+            cout << "Enter new age: ";
+            cin >> temp->age;
+            cout << "Enter new contact number: ";
+            cin.ignore();
+            getline(cin, temp->contact);
+            cout << "Staff profile updated successfully!\n";
+            saveToFile();  // Save changes to file
+            return;
+        }
+        temp = temp->next;
+    } while (temp != head);
+    cout << "Staff profile not found.\n";
+}
+
+// Function to delete a staff profile
+void deleteStaffProfile() {
+    if (!head) {
+        cout << "No staff profiles to delete.\n";
+        return;
+    }
+    string name;
+    cout << "Enter the name of the staff to delete: ";
+    cin.ignore();
+    getline(cin, name);
+
+    Staff* temp = head;
+    Staff* prev = nullptr;
+
+    // Check if the node to delete is the head node
+    if (head->name == name) {
+        if (head->next == head) { // Only one node in the list
+            delete head;
+            head = nullptr;
+        } else {
+            while (temp->next != head) { // Find the last node
+                temp = temp->next;
+            }
+            temp->next = head->next;
+            delete head;
+            head = temp->next;
+        }
+        cout << "Staff profile deleted successfully!\n";
+        saveToFile();  // Save changes to file
+        return;
+    }
+
+    // For non-head nodes
+    do {
+        prev = temp;
+        temp = temp->next;
+        if (temp->name == name) {
+            prev->next = temp->next;
+            delete temp;
+            cout << "Staff profile deleted successfully!\n";
+            saveToFile();  // Save changes to file
+            return;
+        }
+    } while (temp != head);
+
+    cout << "Staff profile not found.\n";
+}
+
+// Main menu for managing staff profiles
+void manageStaffModule() {
+    loadFromFile();  // Load data from file at the start
+    int choice;
+    do {
+        cout << "\n--- Hospital Low-Level Staff Management ---\n";
+        cout << "1. Add Staff Profile\n";
+        cout << "2. View Staff Profiles\n";
+        cout << "3. Update Staff Profile\n";
+        cout << "4. Delete Staff Profile\n";
+        cout << "5. Exit to Main Menu\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            addStaffProfile();
+        } else if (choice == 2) {
+            viewStaffProfiles();
+        } else if (choice == 3) {
+            updateStaffProfile();
+        } else if (choice == 4) {
+            deleteStaffProfile();
+        } else if (choice == 5) {
+            cout << "Exiting to Main Menu...\n";
+            break;
+        } else {
+            cout << "Invalid choice. Please try again.\n";
+        }
+    } while (5);
+}
 
 // Login system class for managing login operations
 class LoginSystem {
@@ -452,7 +817,7 @@ void highLevelFunctionality() {
                 case 2: cout << "Display All Patients\n"; break;
                 case 4: cout << "Find Patient by CNIC\n"; break;
                 case 6: cout << "Display Bill\n"; break;
-                case 7: cout << "Exit\n"; break;
+                case 7: cout << "Enter In Doctor Section\n"; break;
             }
         }
 
@@ -483,13 +848,48 @@ void highLevelFunctionality() {
                 cin >> id;
                 hm.displayBill(id);
                 system("pause"); // Pause to view output before clearing screen
-            } else if (choice == 7) {
-                // Exit
-                break;
-            }
-        }
+            } else if (choice == 7) {system("cls");
+                
+   
+
+        int choice;
+do {
+    // Display menu options
+    cout << "1. Add Doctor Profile\n";
+    cout << "2. View Doctor Profiles\n";
+    cout << "3. Update Doctor Profile\n";
+    cout << "4. To Add in staff management\n";
+    cout << "5. Exit\n";
+    cout << "Enter your choice: ";
+    cin >> choice;
+
+    if (choice == 1) {
+        addDoctorProfile();
+    } else if (choice == 2) {
+        viewDoctorProfiles();
+    } else if (choice == 3) {
+        updateDoctorProfile();
+    } else if (choice == 4) {
+    	  manageStaffModule();  // Run the staff management module
+      
+    }
+    else if(choice==5)
+    {
+    	 cout << "Exiting to Main Menu...\n";
+            break;
+	}
+	 else{
+        cout << "Invalid choice. Please try again.\n";
+    }
+} while (5); // Loop until the user chooses to exit
+
     }
 }
+            }
+        }
+    
+    
+
     void localSystemFunctionality() {
         countdown();
         cout << "\n\n\t\t\tWelcome, Local System User!\n";
