@@ -418,6 +418,7 @@ void displayMenuH(int selectedOption) {
     cout << "\n\tUse arrow keys to navigate and press Enter to select.";
 }
 
+
 // Countdown timer function
 void countdown() {
     cout << setw(40) << setfill(' ') << "This tab will Open in 10 Seconds...\n\n";
@@ -702,6 +703,257 @@ void manageStaffModule() {
         }
     } while (5);
 }
+// Structure to represent a patient
+struct Patients{
+    string name;
+    int age;
+    string issue;
+    int priority; // Priority for emergency cases (higher = more urgent)
+    Patients* next; // Pointer to the next patient node
+};
+
+// Regular queue class for regular patients
+class RegularQueue {
+private:
+    Patients* front; // Front of the queue
+    Patients* rear;  // Rear of the queue
+
+public:
+    RegularQueue() : front(nullptr), rear(nullptr) {}
+
+    // Add a patient to the regular queue
+    void enqueue(const string& name, int age, const string& issue) {
+        Patients* newPatient = new Patients{name, age, issue, 0, nullptr};
+
+        // If queue is empty, front and rear are the new patient
+        if (rear == nullptr) {
+            front = rear = newPatient;
+        } else {
+            rear->next = newPatient;
+            rear = newPatient;
+        }
+
+        // Write patient data to file
+        ofstream file("que.txt", ios::app);
+        file << "Regular," << name << "," << age << "," << issue << "\n";
+        file.close();
+
+        cout << "Regular appointment added for " << name << ".\n";
+    }
+
+    // Remove and return the patient at the front of the queue
+    Patients* dequeue() {
+        if (front == nullptr) return nullptr; // Queue is empty
+
+        Patients* patientToServe = front;
+        front = front->next;
+
+        // If front becomes null, set rear to null as well
+        if (front == nullptr) rear = nullptr;
+
+        return patientToServe;
+    }
+
+    // Check if the regular queue is empty
+    bool isEmpty() const {
+        return front == nullptr;
+    }
+
+    // Getter for front to display regular patients
+    Patients* getFront() const {
+        return front;
+    }
+};
+
+// Priority queue class for emergency patients
+class EmergencyQueue {
+private:
+    Patients* head; // Head of the list
+
+public:
+    EmergencyQueue() : head(nullptr) {}
+
+    // Function to access the head for displaying patients
+    Patients* getHead() const {
+        return head;
+    }
+
+    // Insert patient based on priority (higher priority patients come first)
+    void enqueue(const string& name, int age, const string& issue, int priority) {
+        Patients* newPatient = new Patients{name, age, issue, priority, nullptr};
+
+        if (head == nullptr || head->priority < priority) {
+            // Insert at the beginning if list is empty or new patient has highest priority
+            newPatient->next = head;
+            head = newPatient;
+        } else {
+            // Insert based on priority
+            Patients* temp = head;
+            while (temp->next != nullptr && temp->next->priority >= priority) {
+                temp = temp->next;
+            }
+            newPatient->next = temp->next;
+            temp->next = newPatient;
+        }
+
+        // Write patient data to file
+        ofstream file("que.txt", ios::app);
+        file << "Emergency," << name << "," << age << "," << issue << "," << priority << "\n";
+        file.close();
+
+        cout << "Emergency appointment added for " << name << " with priority " << priority << ".\n";
+    }
+
+    // Remove and return the patient with the highest priority
+    Patients* dequeue() {
+        if (head == nullptr) return nullptr; // Queue is empty
+
+        Patients* patientToServe = head;
+        head = head->next;
+        return patientToServe;
+    }
+
+    // Check if the emergency queue is empty
+    bool isEmpty() const {
+        return head == nullptr;
+    }
+};
+
+// Function to serve the next patient, prioritizing emergency cases
+void serveNextPatient(EmergencyQueue& emergencyQueue, RegularQueue& regularQueue) {
+    Patients* patientToServe;
+
+    if (!emergencyQueue.isEmpty()) {
+        // Serve the emergency patient with the highest priority
+        patientToServe = emergencyQueue.dequeue();
+        cout << "Serving emergency patient: " << patientToServe->name
+             << " (Age: " << patientToServe->age
+             << ", Issue: " << patientToServe->issue
+             << ", Priority: " << patientToServe->priority << ")\n";
+    } else if (!regularQueue.isEmpty()) {
+        // Serve the next regular patient if no emergency patients
+        patientToServe = regularQueue.dequeue();
+        cout << "Serving regular patient: " << patientToServe->name
+             << " (Age: " << patientToServe->age
+             << ", Issue: " << patientToServe->issue << ")\n";
+    } else {
+        cout << "No patients in the queue.\n";
+        return;
+    }
+
+    delete patientToServe; // Free memory after serving the patient
+}
+
+// Function to display all patients in both queues
+void displayAllPatients(EmergencyQueue& emergencyQueue, RegularQueue& regularQueue) {
+    cout << "\n--- Emergency Patients ---\n";
+    Patients* temp = emergencyQueue.getHead(); // Use getHead() to access the head of the emergency queue
+    while (temp != nullptr) {
+        cout << "Name: " << temp->name << ", Age: " << temp->age << ", Issue: " << temp->issue
+             << ", Priority: " << temp->priority << endl;
+        temp = temp->next;
+    }
+
+    cout << "\n--- Regular Patients ---\n";
+    temp = regularQueue.getFront();
+    while (temp != nullptr) {
+        cout << "Name: " << temp->name << ", Age: " << temp->age << ", Issue: " << temp->issue << endl;
+        temp = temp->next;
+    }
+}
+
+// Load patients from file at startup
+void loadPatientsFromFile(EmergencyQueue& emergencyQueue, RegularQueue& regularQueue) {
+    ifstream file("que.txt");
+    if (!file) return; // File doesn't exist, no data to load
+
+    string line, type, name, issue;
+    int age, priority;
+
+    while (getline(file, line)) {
+        istringstream iss(line);
+        getline(iss, type, ',');
+        getline(iss, name, ',');
+        iss >> age;
+        iss.ignore();
+        getline(iss, issue, ',');
+
+        if (type == "Emergency") {
+            iss >> priority;
+            emergencyQueue.enqueue(name, age, issue, priority);
+        } else {
+            regularQueue.enqueue(name, age, issue);
+        }
+    }
+    file.close();
+}
+
+// Main menu function to handle user input
+void appointmentSystem() {
+    RegularQueue regularQueue;
+    EmergencyQueue emergencyQueue;
+
+    // Load existing patients from file
+    loadPatientsFromFile(emergencyQueue, regularQueue);
+
+    int choice;
+    do {
+        cout << "\n--- Hospital Appointment System ---\n";
+        cout << "1. Add Regular Patient\n";
+        cout << "2. Add Emergency Patient\n";
+        cout << "3. Serve Next Patient\n";
+        cout << "4. Display All Patients\n";
+        cout << "5. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            string name, issue;
+            int age;
+            cout << "Enter patient's name: ";
+            cin.ignore();
+            getline(cin, name);
+            cout << "Enter patient's age: ";
+            cin >> age;
+            cout << "Enter patient's issue: ";
+            cin.ignore();
+            getline(cin, issue);
+
+            // Add patient to the regular queue
+            regularQueue.enqueue(name, age, issue);
+
+        } else if (choice == 2) {
+            string name, issue;
+            int age, priority;
+            cout << "Enter emergency patient's name: ";
+            cin.ignore();
+            getline(cin, name);
+            cout << "Enter patient's age: ";
+            cin >> age;
+            cout << "Enter patient's issue: ";
+            cin.ignore();
+            getline(cin, issue);
+            cout << "Enter emergency priority level (1-10, 10 = highest): ";
+            cin >> priority;
+
+            // Add patient to the emergency queue
+            emergencyQueue.enqueue(name, age, issue, priority);
+
+        } else if (choice == 3) {
+            // Serve the next patient based on priority
+            serveNextPatient(emergencyQueue, regularQueue);
+
+        } else if (choice == 4) {
+            // Display all patients in both queues
+            displayAllPatients(emergencyQueue, regularQueue);
+
+        } else if (choice == 5) {
+            cout << "Exiting the system.\n";
+        } else {
+            cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 5);
+}
 
 // Login system class for managing login operations
 class LoginSystem {
@@ -897,14 +1149,14 @@ do {
 
     // Example usage
     int choice;
-    while (true) {
+    while (8) {
         cout << "\n--- Hospital Patient Management System ---\n";
         cout << "1. Add Patient\n";
         cout << "3. Find Patient by ID\n";
        
         cout << "5. Delete Patient by ID\n";
         
-        cout << "7. Exit\n";
+        cout << "7. To Appointement\n";
         cout << "Enter your choice: ";
         cin >> choice;
 
@@ -973,7 +1225,7 @@ do {
         } else if (choice == 6) {
           
         } else if (choice == 7) {
-            break; // Exit
+             appointmentSystem();
         } else {
             cout << "Invalid choice. Please try again.\n";
         }
