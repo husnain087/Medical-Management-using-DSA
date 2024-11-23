@@ -5,7 +5,10 @@
 #include <iomanip>
 #include <windows.h>
 #include <sstream>
+#include <stack>
+#include"husnain.h"
 using namespace std;
+
 
 struct Patient {
     int id;
@@ -406,14 +409,16 @@ void updateDoctorProfile() {
 
 // Display main menu for high-level users
 void displayMenuH(int selectedOption) {
+	
     system("cls");
+    setTextColor(10);
     cout << "\n\n\t\t\tWelcome to Medical Management System\n\n";
     if (selectedOption == 0) {
-        cout << "\t> 1. High-Level User\n";
-        cout << "\t  2. Local User\n";
+        cout << "\t\t\t\t> 1. High-Level User\n";
+        cout << "\t\t\t\t2. Local User\n";
     } else {
-        cout << "\t  1. High-Level User\n";
-        cout << "\t> 2. Local User\n";
+        cout << "\t\t\t\t1. High-Level User\n";
+        cout << "\t\t\t\t> 2. Local User\n";
     }
     cout << "\n\tUse arrow keys to navigate and press Enter to select.";
 }
@@ -460,6 +465,7 @@ public:
     }
 
     void createID() {
+    	setTextColor(7);
         cout << "\n\t*Create your user id*" << endl;
         cout << "\tEnter User Name: ";
         cin >> username;
@@ -955,6 +961,739 @@ void appointmentSystem() {
     } while (choice != 5);
 }
 
+// Structure to represent an alert
+struct Alert {
+    string timestamp;
+    string alertType;
+    string message;
+};
+
+// Class to manage the alert system using a stack
+class AlertSystem {
+private:
+    stack<Alert> alertStack; // Stack to store alerts
+
+    // Function to save a new alert to file
+    void saveAlertToFile(const Alert& alert) {
+        ofstream file("stack.txt", ios::app);
+        if (file.is_open()) {
+            file << alert.timestamp << "," << alert.alertType << "," << alert.message << "\n";
+            file.close();
+        } else {
+            cout << "Error opening file for writing alerts.\n";
+        }
+    }
+
+    // Function to load alerts from file during startup
+    void loadAlertsFromFile() {
+        ifstream file("stack.txt");
+        if (!file.is_open()) return;
+
+        string line, timestamp, alertType, message;
+        while (getline(file, line)) {
+            istringstream iss(line);
+            getline(iss, timestamp, ',');
+            getline(iss, alertType, ',');
+            getline(iss, message, ',');
+
+            Alert alert{timestamp, alertType, message};
+            alertStack.push(alert);
+        }
+        file.close();
+    }
+
+public:
+    AlertSystem() {
+        // Load existing alerts from file on startup
+        loadAlertsFromFile();
+    }
+
+    // Function to push a new alert to the stack
+    void pushAlert(const string& timestamp, const string& alertType, const string& message) {
+        Alert newAlert{timestamp, alertType, message};
+        alertStack.push(newAlert);
+
+        // Save to file for persistence
+        saveAlertToFile(newAlert);
+
+        cout << "Alert added: " << alertType << " - " << message << "\n";
+    }
+
+    // Function to pop the latest alert from the stack
+    void popAlert() {
+        if (alertStack.empty()) {
+            cout << "No alerts to remove.\n";
+            return;
+        }
+
+        Alert latestAlert = alertStack.top();
+        alertStack.pop();
+        cout << "Removing latest alert:\n";
+        cout << "Timestamp: " << latestAlert.timestamp << "\n";
+        cout << "Type: " << latestAlert.alertType << "\n";
+        cout << "Message: " << latestAlert.message << "\n";
+    }
+
+    // Function to display all alerts in the stack
+    void displayAllAlerts() {
+        if (alertStack.empty()) {
+            cout << "No alerts available.\n";
+            return;
+        }
+
+        stack<Alert> tempStack = alertStack;
+        cout << "\n--- All Alerts (Most Recent First) ---\n";
+        while (!tempStack.empty()) {
+            Alert alert = tempStack.top();
+            cout << "Timestamp: " << alert.timestamp
+                 << ", Type: " << alert.alertType
+                 << ", Message: " << alert.message << "\n";
+            tempStack.pop();
+        }
+    }
+};
+
+// Function to get the current timestamp (Placeholder)
+string getCurrentTimestamp() {
+    // Here, we're using a placeholder timestamp. In a real application, you'd fetch the system time.
+    return "2024-11-05 10:30:00";
+}
+
+// Main menu to handle user interaction
+void alertMenu() {
+    AlertSystem alertSystem;
+
+    int choice;
+    do {
+        cout << "\n--- Hospital Real-Time Alert System ---\n";
+        cout << "1. Add New Alert\n";
+        cout << "2. Remove Latest Alert\n";
+        cout << "3. Display All Alerts\n";
+        cout << "4. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            string alertType, message;
+            cout << "Enter alert type (e.g., Emergency, Info, Warning): ";
+            cin.ignore();
+            getline(cin, alertType);
+            cout << "Enter alert message: ";
+            getline(cin, message);
+
+            // Push a new alert with the current timestamp
+            alertSystem.pushAlert(getCurrentTimestamp(), alertType, message);
+
+        } else if (choice == 2) {
+            // Pop the latest alert
+            alertSystem.popAlert();
+
+        } else if (choice == 3) {
+            // Display all alerts
+            alertSystem.displayAllAlerts();
+
+        } else if (choice == 4) {
+            cout << "Exiting the alert system.\n";
+        } else {
+            cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 4);
+}
+
+// Node structure for the Binary Search Tree (BST)
+struct PatientNode {
+    int patientID;
+    string name;
+    string expenseNames[5] = {"Room Charges", "Medication", "Surgery Fee", "Doctor Fee", "Lab Tests"}; // Names of expenses
+    float expenses[5]; // Array to hold 5 hospital expenses
+    PatientNode* left;
+    PatientNode* right;
+
+    // Constructor to initialize a node with patient data
+    PatientNode(int id, const string& pname, const float* pexpenses)
+        : patientID(id), name(pname), left(nullptr), right(nullptr) {
+        for (int i = 0; i < 5; i++) {
+            expenses[i] = pexpenses[i];
+        }
+    }
+};
+
+// Class for managing the Financial Analysis using a Binary Search Tree
+class FinancialAnalysis {
+private:
+    PatientNode* root;
+
+    // Helper function to insert data into the tree
+    PatientNode* insertNode(PatientNode* node, int id, const string& name, const float* expenses) {
+        if (node == nullptr) {
+            return new PatientNode(id, name, expenses);
+        }
+        if (id < node->patientID) {
+            node->left = insertNode(node->left, id, name, expenses);
+        } else if (id > node->patientID) {
+            node->right = insertNode(node->right, id, name, expenses);
+        } else {
+            cout << "Patient with ID " << id << " already exists.\n";
+        }
+        return node;
+    }
+
+    // Helper function to display patient's financial data
+    void displayPatientData(PatientNode* node, int id) {
+        if (node == nullptr) {
+            return;
+        }
+
+        if (id < node->patientID) {
+            displayPatientData(node->left, id);
+        } else if (id > node->patientID) {
+            displayPatientData(node->right, id);
+        } else {
+            // Found the patient
+            cout << "\n--- Financial Analysis for Patient ---\n";
+            cout << "Patient ID: " << node->patientID << "\n";
+            cout << "Patient Name: " << node->name << "\n";
+            cout << "Hospital Expenses:\n";
+            for (int i = 0; i < 5; i++) {
+                cout << node->expenseNames[i] << ": $" << node->expenses[i] << "\n";
+            }
+        }
+    }
+
+    // Save data to file with expense names
+    void saveDataToFile(int id, const string& name, const float* expenses) {
+        ofstream file("new.txt", ios::app);
+        if (file.is_open()) {
+            file << id << "," << name;
+            for (int i = 0; i < 5; i++) {
+                file << "," << expenses[i];
+            }
+            file << "\n";
+            file.close();
+        } else {
+            cout << "Error opening file to save data.\n";
+        }
+    }
+
+    // Load data from file into the BST
+    void loadDataFromFile() {
+        ifstream file("new.txt");
+        if (file.is_open()) {
+            string line;
+            while (getline(file, line)) {
+                // Parse the line for patient data
+                istringstream iss(line);
+                string part;
+                int id;
+                string name;
+                float expenses[5];
+
+                getline(iss, part, ',');
+                id = stoi(part);
+                getline(iss, name, ',');
+
+                for (int i = 0; i < 5; i++) {
+                    getline(iss, part, ',');
+                    expenses[i] = stof(part);
+                }
+
+                // Insert the loaded data into the BST
+                root = insertNode(root, id, name, expenses);
+            }
+            file.close();
+        } else {
+            cout << "Error opening file to load data.\n";
+        }
+    }
+
+public:
+    // Constructor to initialize the tree and load data from the file
+    FinancialAnalysis() : root(nullptr) {
+        loadDataFromFile();
+    }
+
+    // Function to add a new patient's financial data
+    void addPatientData(int id, const string& name) {
+        float expenses[5];
+        cout << "Enter 5 Hospital Expenses for Patient " << name << " (ID: " << id << "):\n";
+        string expenseNames[5] = {"Room Charges", "Medication", "Surgery Fee", "Doctor Fee", "Lab Tests"};
+
+        for (int i = 0; i < 5; i++) {
+            cout << expenseNames[i] << ": $";
+            cin >> expenses[i];
+        }
+
+        // Insert into the BST
+        root = insertNode(root, id, name, expenses);
+
+        // Save the data to the file
+        saveDataToFile(id, name, expenses);
+
+        cout << "Patient data has been added successfully.\n";
+    }
+
+    // Function to display the patient's financial data
+    void displayBill(int id) {
+        displayPatientData(root, id);
+    }
+};
+
+// Function to handle financial analysis
+void financialAnalysis() {
+    FinancialAnalysis analysis;
+
+    int choice;
+    do {
+        cout<<"Enter below detail to genrate report;";
+        cout << "1. Enter Patient Financial Data\n";
+        cout << "2. Display Patient Financial Data\n";
+        cout << "3. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            int id;
+            string name;
+
+            cout << "Enter Patient ID: ";
+            cin >> id;
+            cin.ignore(); // Clear newline character from input buffer
+
+            cout << "Enter Patient Name: ";
+            getline(cin, name);
+
+            // Add patient's financial data
+            analysis.addPatientData(id, name);
+
+        } else if (choice == 2) {
+            int id;
+            cout << "Enter Patient ID to display billing details: ";
+            cin >> id;
+            cout<<"Wait please your bill is preparing available in few seconds\n";
+            countdown();
+            // Display the bill for the patient
+            analysis.displayBill(id);
+
+        } else if (choice != 3) {
+            cout << "Invalid choice. Please try again.\n";
+        }
+
+    } while (choice != 3);
+
+    cout << "Exiting Financial Analysis.\n";
+}
+
+struct Item {
+    int itemID;
+    string name;
+    int quantity;
+    double price;
+    string expiryDate;
+};
+
+class AVLNode {
+public:
+    Item item;
+    AVLNode* left;
+    AVLNode* right;
+    int height;
+
+    AVLNode(Item i) {
+        item = i;
+        left = right = nullptr;
+        height = 1;
+    }
+};
+
+class AVLTree {
+private:
+    AVLNode* root;
+
+    int height(AVLNode* node) {
+        return node ? node->height : 0;
+    }
+
+    int getBalanceFactor(AVLNode* node) {
+        return height(node->left) - height(node->right);
+    }
+
+    AVLNode* rightRotate(AVLNode* y) {
+        AVLNode* x = y->left;
+        AVLNode* T2 = x->right;
+        x->right = y;
+        y->left = T2;
+        y->height = max(height(y->left), height(y->right)) + 1;
+        x->height = max(height(x->left), height(x->right)) + 1;
+        return x;
+    }
+
+    AVLNode* leftRotate(AVLNode* x) {
+        AVLNode* y = x->right;
+        AVLNode* T2 = y->left;
+        y->left = x;
+        x->right = T2;
+        x->height = max(height(x->left), height(x->right)) + 1;
+        y->height = max(height(y->left), height(y->right)) + 1;
+        return y;
+    }
+
+    AVLNode* insert(AVLNode* node, Item item) {
+        if (!node)
+            return new AVLNode(item);
+
+        if (item.itemID < node->item.itemID)
+            node->left = insert(node->left, item);
+        else if (item.itemID > node->item.itemID)
+            node->right = insert(node->right, item);
+        else
+            return node;
+
+        node->height = 1 + max(height(node->left), height(node->right));
+
+        int balance = getBalanceFactor(node);
+
+        if (balance > 1 && item.itemID < node->left->item.itemID)
+            return rightRotate(node);
+
+        if (balance < -1 && item.itemID > node->right->item.itemID)
+            return leftRotate(node);
+
+        if (balance > 1 && item.itemID > node->left->item.itemID) {
+            node->left = leftRotate(node->left);
+            return rightRotate(node);
+        }
+
+        if (balance < -1 && item.itemID < node->right->item.itemID) {
+            node->right = rightRotate(node->right);
+            return leftRotate(node);
+        }
+
+        return node;
+    }
+
+    AVLNode* search(AVLNode* node, int itemID) {
+        if (!node || node->item.itemID == itemID)
+            return node;
+
+        if (itemID < node->item.itemID)
+            return search(node->left, itemID);
+        else
+            return search(node->right, itemID);
+    }
+
+    AVLNode* minValueNode(AVLNode* node) {
+        AVLNode* current = node;
+        while (current && current->left != nullptr)
+            current = current->left;
+        return current;
+    }
+
+    AVLNode* deleteNode(AVLNode* root, int itemID) {
+        if (!root)
+            return root;
+
+        if (itemID < root->item.itemID)
+            root->left = deleteNode(root->left, itemID);
+        else if (itemID > root->item.itemID)
+            root->right = deleteNode(root->right, itemID);
+        else {
+            if ((root->left == nullptr) || (root->right == nullptr)) {
+                AVLNode* temp = root->left ? root->left : root->right;
+
+                if (!temp) {
+                    temp = root;
+                    root = nullptr;
+                } else
+                    *root = *temp;
+
+                delete temp;
+            } else {
+                AVLNode* temp = minValueNode(root->right);
+                root->item = temp->item;
+                root->right = deleteNode(root->right, temp->item.itemID);
+            }
+        }
+
+        if (!root)
+            return root;
+
+        root->height = 1 + max(height(root->left), height(root->right));
+
+        int balance = getBalanceFactor(root);
+
+        if (balance > 1 && getBalanceFactor(root->left) >= 0)
+            return rightRotate(root);
+
+        if (balance > 1 && getBalanceFactor(root->left) < 0) {
+            root->left = leftRotate(root->left);
+            return rightRotate(root);
+        }
+
+        if (balance < -1 && getBalanceFactor(root->right) <= 0)
+            return leftRotate(root);
+
+        if (balance < -1 && getBalanceFactor(root->right) > 0) {
+            root->right = rightRotate(root->right);
+            return leftRotate(root);
+        }
+
+        return root;
+    }
+
+    void inOrderTraversal(AVLNode* node) {
+        if (node) {
+            inOrderTraversal(node->left);
+            cout << "ID: " << node->item.itemID << ", Name: " << node->item.name
+                 << ", Quantity: " << node->item.quantity << ", Price: " << node->item.price
+                 << ", Expiry: " << node->item.expiryDate << endl;
+            inOrderTraversal(node->right);
+        }
+    }
+
+    void writeToFile(AVLNode* node, ofstream& file) {
+        if (node) {
+            file << node->item.itemID << "," << node->item.name << "," << node->item.quantity
+                 << "," << node->item.price << "," << node->item.expiryDate << endl;
+            writeToFile(node->left, file);
+            writeToFile(node->right, file);
+        }
+    }
+
+    void loadFromFile(ifstream& file) {
+        string line;
+        while (getline(file, line)) {
+            Item item;
+            size_t pos = 0;
+            pos = line.find(",");
+            item.itemID = stoi(line.substr(0, pos));
+            line.erase(0, pos + 1);
+
+            pos = line.find(",");
+            item.name = line.substr(0, pos);
+            line.erase(0, pos + 1);
+
+            pos = line.find(",");
+            item.quantity = stoi(line.substr(0, pos));
+            line.erase(0, pos + 1);
+
+            pos = line.find(",");
+            item.price = stod(line.substr(0, pos));
+            line.erase(0, pos + 1);
+
+            item.expiryDate = line;
+
+            root = insert(root, item);
+        }
+    }
+
+    void checkLowStock(AVLNode* node, int threshold) {
+        if (node) {
+            checkLowStock(node->left, threshold);
+            if (node->item.quantity < threshold) {
+                cout << "Low Stock: " << node->item.name << " (Quantity: " << node->item.quantity << ")\n";
+            }
+            checkLowStock(node->right, threshold);
+        }
+    }
+
+    void findMostExpensive(AVLNode* node, Item& maxItem) {
+        if (node) {
+            findMostExpensive(node->left, maxItem);
+            if (node->item.price > maxItem.price) {
+                maxItem = node->item;
+            }
+            findMostExpensive(node->right, maxItem);
+        }
+    }
+
+    void generateExpiryReport(AVLNode* node, const string& targetDate) {
+        if (node) {
+            generateExpiryReport(node->left, targetDate);
+            if (node->item.expiryDate <= targetDate) {
+                cout << "Expiring Soon: " << node->item.name << " (Expiry: " << node->item.expiryDate << ")\n";
+            }
+            generateExpiryReport(node->right, targetDate);
+        }
+    }
+
+public:
+    AVLTree() {
+        root = nullptr;
+    }
+
+    void insertItem(Item item) {
+        root = insert(root, item);
+    }
+
+    void deleteItem(int itemID) {
+        root = deleteNode(root, itemID);
+    }
+
+    void updateItem(int itemID, int newQuantity, double newPrice, const string& newExpiryDate) {
+        AVLNode* result = search(root, itemID);
+        if (result) {
+            result->item.quantity = newQuantity;
+            result->item.price = newPrice;
+            result->item.expiryDate = newExpiryDate;
+            cout << "Item updated successfully.\n";
+        } else {
+            cout << "Item not found!\n";
+        }
+    }
+
+    void searchItem(int itemID) {
+        AVLNode* result = search(root, itemID);
+        if (result)
+            cout << "Found Item - ID: " << result->item.itemID << ", Name: " << result->item.name
+                 << ", Quantity: " << result->item.quantity << ", Price: " << result->item.price
+                 << ", Expiry: " << result->item.expiryDate << endl;
+        else
+            cout << "Item not found!\n";
+    }
+
+    void displayInventory() {
+        inOrderTraversal(root);
+    }
+
+    void saveInventory(const string& filename) {
+        ofstream file(filename);
+        if (file.is_open()) {
+            writeToFile(root, file);
+            file.close();
+            cout << "Inventory saved to file.\n";
+        } else {
+            cout << "Error saving to file.\n";
+        }
+    }
+
+    void loadInventory(const string& filename) {
+        ifstream file(filename);
+        if (file.is_open()) {
+            loadFromFile(file);
+            file.close();
+            cout << "Inventory loaded from file.\n";
+        } else {
+            cout << "Error loading file.\n";
+        }
+    }
+
+    void checkLowStock(int threshold) {
+        checkLowStock(root, threshold);
+    }
+
+    void findMostExpensiveItem() {
+        if (root) {
+            Item maxItem = root->item;
+            findMostExpensive(root, maxItem);
+            cout << "Most Expensive Item - ID: " << maxItem.itemID << ", Name: " << maxItem.name
+                 << ", Price: " << maxItem.price << endl;
+        } else {
+            cout << "Inventory is empty!\n";
+        }
+    }
+
+    void generateExpiryReport(const string& targetDate) {
+        cout << "Items expiring on or before " << targetDate << ":\n";
+        generateExpiryReport(root, targetDate);
+    }
+};
+
+void printMenu() {
+    cout << "\nHospital Inventory Management System\n";
+    cout << "1. Add Item to Inventory\n";
+    cout << "2. Remove Item from Inventory\n";
+    cout << "3. Update Item Details\n";
+    cout << "4. Search for an Item\n";
+    cout << "5. Display All Items\n";
+    cout << "6. Save Inventory to File\n";
+    cout << "7. Load Inventory from File\n";
+    cout << "8. Check Low Stock Items\n";
+    cout << "9. Find Most Expensive Item\n";
+    cout << "10. Generate Expiry Report\n";
+    cout << "0. Exit\n";
+}
+void avl()
+{
+	  AVLTree inventory;
+    int choice, id, quantity;
+    double price;
+    string name, expiryDate, filename;
+    int threshold;
+
+    do {
+        printMenu();
+        cout << "Enter your choice: ";
+        cin >> choice;
+        switch (choice) {
+            case 1:
+                cout << "Enter Item ID: ";
+                cin >> id;
+                cout << "Enter Item Name: ";
+                cin.ignore();
+                getline(cin, name);
+                cout << "Enter Quantity: ";
+                cin >> quantity;
+                cout << "Enter Price: ";
+                cin >> price;
+                cout << "Enter Expiry Date (YYYY-MM-DD): ";
+                cin >> expiryDate;
+                inventory.insertItem({id, name, quantity, price, expiryDate});
+                break;
+            case 2:
+                cout << "Enter Item ID to delete: ";
+                cin >> id;
+                inventory.deleteItem(id);
+                break;
+            case 3:
+                cout << "Enter Item ID to update: ";
+                cin >> id;
+                cout << "Enter New Quantity: ";
+                cin >> quantity;
+                cout << "Enter New Price: ";
+                cin >> price;
+                cout << "Enter New Expiry Date (YYYY-MM-DD): ";
+                cin >> expiryDate;
+                inventory.updateItem(id, quantity, price, expiryDate);
+                break;
+            case 4:
+                cout << "Enter Item ID to search: ";
+                cin >> id;
+                inventory.searchItem(id);
+                break;
+            case 5:
+                inventory.displayInventory();
+                break;
+            case 6:
+                cout << "Enter filename to save inventory: ";
+                cin >> filename;
+                inventory.saveInventory(filename);
+                break;
+            case 7:
+                cout << "Enter filename to load inventory: ";
+                cin >> filename;
+                inventory.loadInventory(filename);
+                break;
+            case 8:
+                cout << "Enter stock threshold to check low stock items: ";
+                cin >> threshold;
+                inventory.checkLowStock(threshold);
+                break;
+            case 9:
+                inventory.findMostExpensiveItem();
+                break;
+            case 10:
+                cout << "Enter date (YYYY-MM-DD) for expiry report: ";
+                cin >> expiryDate;
+                inventory.generateExpiryReport(expiryDate);
+                break;
+            case 0:
+                cout << "Exiting program.\n";
+                break;
+            default:
+                cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 0);
+}
 // Login system class for managing login operations
 class LoginSystem {
 private:
@@ -987,6 +1726,7 @@ public:
         }
 
         do {
+        	setTextColor(10);
         	      	       		cout<<"\n\n";
 cout<<setw(20)<<setfill(' ')<<""<<"   _____                _   _                                                 _   \n";
 cout<<setw(20)<<setfill(' ')<<""<<"  / ____|              | | (_)                 /\\                            | |  \n";
@@ -1020,6 +1760,7 @@ cout<<setw(20)<<setfill(' ')<<"";
                 cout << "\n\t\tLogin Successful\n";
                 loginSuccess = true;
             } else {
+            	setTextColor(4);
                 cout << "\n\t\tIncorrect Username or Password\n";
                 cout << "\n\t\tPress any key to try again or press 'F' to reset password...\n";
                 char choice = _getch();
@@ -1051,7 +1792,7 @@ void highLevelFunctionality() {
     cout << "\n\n\t\t\tWelcome, High-Level User!\n";
 
     int choice = 2; // Start with the first option highlighted
-    int maxOption = 7; // Maximum number of options
+    int maxOption = 8; // Maximum number of options
     char key;
 
     while (true) {
@@ -1066,10 +1807,10 @@ void highLevelFunctionality() {
                 cout << "  ";
             }
             switch (i) {
-                case 2: cout << "Display All Patients\n"; break;
-                case 4: cout << "Find Patient by CNIC\n"; break;
-                case 6: cout << "Display Bill\n"; break;
-                case 7: cout << "Enter In Doctor Section\n"; break;
+                case 2: cout << "1.Inventory management \n"; break;
+                case 4: cout << "2.Find Patient by CNIC\n"; break;
+                case 6: cout << "3.Display Bill\n"; break;
+                case 7: cout << "4.Enter In Doctor Section and staff management\n"; break;
             }
         }
 
@@ -1077,23 +1818,23 @@ void highLevelFunctionality() {
 
         if (key == 72) { // Up arrow key
             choice--;
-            if (choice < 2) choice = 7; // Loop back to the last option
+            if (choice < 2) choice = 8; // Loop back to the last option
         } else if (key == 80) { // Down arrow key
             choice++;
             if (choice > 7) choice = 2; // Loop back to the first option
         } else if (key == '\r') { // Enter key
             if (choice == 2) {
-                // Display all patients
-                hm.displayPatients();
+                system("cls");
+                avl();
                 system("pause"); // Pause to view output before clearing screen
-            } else if (choice == 4) {
+            } else if (choice == 4) {system("cls");
                 // Find patient by CNIC
                 string cnic;
                 cout << "Enter CNIC: ";
                 cin >> cnic;
                 hm.findPatientByCNIC(cnic);
                 system("pause"); // Pause to view output before clearing screen
-            } else if (choice == 6) {
+            } else if (choice == 6) {system("cls");
                 // Display bill
                 int id;
                 cout << "Enter Patient ID for billing: ";
@@ -1115,13 +1856,13 @@ do {
     cout << "Enter your choice: ";
     cin >> choice;
 
-    if (choice == 1) {
+    if (choice == 1) {system("cls");
         addDoctorProfile();
-    } else if (choice == 2) {
+    } else if (choice == 2) {system("cls");
         viewDoctorProfiles();
-    } else if (choice == 3) {
+    } else if (choice == 3) {system("cls");
         updateDoctorProfile();
-    } else if (choice == 4) {
+    } else if (choice == 4) {system("cls");
     	  manageStaffModule();  // Run the staff management module
       
     }
@@ -1136,11 +1877,18 @@ do {
 } while (5); // Loop until the user chooses to exit
 
     }
+  
 }
             }
         }
     
-    
+// Function to print centered text
+void printCentered(const string& text) {
+    int width = 110; // Adjust the width according to your screen size or desired center position
+    int padding = (width - text.length()) / 2;
+    // Print the centered text
+    cout << string(padding, ' ') << text << endl;
+}
 
     void localSystemFunctionality() {
         countdown();
@@ -1150,17 +1898,19 @@ do {
     // Example usage
     int choice;
     while (8) {
-        cout << "\n--- Hospital Patient Management System ---\n";
-        cout << "1. Add Patient\n";
-        cout << "3. Find Patient by ID\n";
-       
-        cout << "5. Delete Patient by ID\n";
-        
-        cout << "7. To Appointement\n";
-        cout << "Enter your choice: ";
+    	setTextColor(3);
+        printCentered("\n\t\t\t\t\t--- Hospital Patient Management System ---\n\n");
+    printCentered("\t1. Add Patient");
+    printCentered("\t\t\t2. To Enter into Financial Report Generation");
+    printCentered("\t3. To Enter into the dsease detector");
+    printCentered("\t4. To Give Alerts");
+    printCentered("\t5. Delete Patient by ID");
+    printCentered("\t6. To Switch Local Level");
+    printCentered("\t7. To Appointment\n\n");
+    printCentered("\tEnter your choice: ");
         cin >> choice;
 
-        if (choice == 1) {
+        if (choice == 1) {system("cls");
             int id, age, roomNumber;
             double billingAmount;
             string name, cnic, gender, contact, address, admissionDate, doctorAssigned, medicalHistory,
@@ -1209,22 +1959,32 @@ do {
                           medicalHistory, currentIllness, treatmentPlan, roomNumber, billingAmount,
                           priority, emergency, condition);
         } else if (choice == 2) {
+        	system("cls");
+        	  int id;
+                cout << "Enter Patient ID for billing: ";
+                cin >> id;
+                hm.displayBill(id);
+                  financialAnalysis();
+			     	
            
         } else if (choice == 3) {
-            int id;
-            cout << "Enter Patient ID: ";
-            cin >> id;
-            hm.displayPatientByID(id);
+        	system("cls");
+           runDiseaseDetector();
         } else if (choice == 4) {
-          
-        } else if (choice == 5) {
+        	system("cls");
+        	
+           alertMenu();
+        } else if (choice == 5) {system("cls");
+        	
             int id;
             cout << "Enter Patient ID to delete: ";
             cin >> id;
             hm.deletePatientByID(id);
-        } else if (choice == 6) {
+        } else if (choice == 6) {system("cls");
+        	highLevelFunctionality();
           
         } else if (choice == 7) {
+        	system("cls");
              appointmentSystem();
         } else {
             cout << "Invalid choice. Please try again.\n";
@@ -1255,6 +2015,7 @@ int main() {
     char key;
 
     do {
+    	setTextColor(3);
     	 cout << " __          __  _                            " << endl;
     cout<<"\t\t\t\t  "  << " \\ \\        / / | |                           " << endl;
     cout<<"\t\t\t\t  "  << "  \\ \\  /\\  / /__| | ___ ___  _ __ ___   ___   " << endl;
